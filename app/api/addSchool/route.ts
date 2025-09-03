@@ -13,13 +13,13 @@ export async function POST(req: Request) {
     const state = formData.get("state") as string;
     const contact = formData.get("contact") as string;
     const email = formData.get("email_id") as string;
-    const imageFile = formData.get("image"); // ❌ Do not check with "instanceof File"
+    const imageFile = formData.get("image") as File | null;
 
     let imagePath: string | null = null;
 
-    // ✅ Handle image if it’s actually a file
-    if (imageFile && typeof imageFile === "object" && "arrayBuffer" in imageFile) {
-      const bytes = await (imageFile as any).arrayBuffer();
+    // ✅ Handle image if it’s actually a File
+    if (imageFile) {
+      const bytes = await imageFile.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
       const uploadDir = path.join(process.cwd(), "public/schoolImages");
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
 
-      const filename = `${Date.now()}-${(imageFile as any).name}`;
+      const filename = `${Date.now()}-${imageFile.name}`;
       imagePath = `/schoolImages/${filename}`;
       fs.writeFileSync(path.join(uploadDir, filename), buffer);
     }
@@ -42,6 +42,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "School added successfully!" });
   } catch (error) {
     console.error("Error in /api/addSchool:", error);
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: (error as Error).message },
+      { status: 500 }
+    );
   }
 }

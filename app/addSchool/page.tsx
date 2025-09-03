@@ -2,17 +2,38 @@
 import { useForm } from "react-hook-form";
 import axios from "axios";
 
+type SchoolForm = {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  contact: string;
+  email_id: string;
+  image: FileList; // react-hook-form stores <input type="file"> as FileList
+};
+
 export default function AddSchool() {
-  const { register, handleSubmit, formState: { errors } } = useForm();
+  const { register, handleSubmit, formState: { errors } } = useForm<SchoolForm>();
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: SchoolForm) => {
     const formData = new FormData();
-    Object.keys(data).forEach((key) => {
-      if (key !== "image") formData.append(key, data[key]);
-    });
-    if (data.image[0]) formData.append("image", data.image[0]);
 
-    await axios.post("/api/addSchool", formData);
+    // Append text fields
+    (Object.keys(data) as (keyof SchoolForm)[]).forEach((key) => {
+      if (key !== "image") {
+        formData.append(key, data[key] as string);
+      }
+    });
+
+    // Append image if uploaded
+    if (data.image?.[0]) {
+      formData.append("image", data.image[0]);
+    }
+
+    await axios.post("/api/addSchool", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
     alert("School added successfully!");
   };
 
