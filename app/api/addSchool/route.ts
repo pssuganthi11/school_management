@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
-import fs from "fs";
-import path from "path";
+import { put } from "@vercel/blob";
 
 export async function POST(req: Request) {
   try {
@@ -17,22 +16,18 @@ export async function POST(req: Request) {
 
     let imagePath: string | null = null;
 
-    // ✅ Handle image if it’s actually a File
     if (imageFile) {
-      const bytes = await imageFile.arrayBuffer();
-      const buffer = Buffer.from(bytes);
+      const arrayBuffer = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-      const uploadDir = path.join(process.cwd(), "public/schoolImages");
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
+      // Upload to Vercel Blob
+      const { url } = await put(`schoolImages/${Date.now()}-${imageFile.name}`, buffer, {
+        access: "public",
+      });
 
-      const filename = `${Date.now()}-${imageFile.name}`;
-      imagePath = `/schoolImages/${filename}`;
-      fs.writeFileSync(path.join(uploadDir, filename), buffer);
+      imagePath = url; // ✅ Save URL in DB instead of local path
     }
 
-    // ✅ Insert into DB
     const db = await connectToDatabase();
     await db.execute(
       "INSERT INTO schools (name, address, city, state, contact, email_id, image) VALUES (?, ?, ?, ?, ?, ?, ?)",
