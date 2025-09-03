@@ -5,12 +5,14 @@ export async function GET() {
   try {
     const db = await connectToDatabase();
 
-    // Get only needed columns
     const [rows] = await db.execute(
       "SELECT id, name, address, city, image FROM schools ORDER BY id DESC"
     );
 
-    return NextResponse.json(rows); // ✅ return rows directly
+    // ✅ Convert RowDataPacket[] into plain objects
+    const schools = JSON.parse(JSON.stringify(rows));
+
+    return NextResponse.json(schools);
   } catch (error) {
     console.error("Error fetching schools:", error);
     return NextResponse.json({ error: "Database error" }, { status: 500 });
